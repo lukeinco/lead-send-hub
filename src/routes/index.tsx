@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useRef, useState, type FormEvent } from "@/lib/react-shim";
+import { forwardRef, useRef, useState, type FormEvent, type ReactNode, type Ref } from "react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -225,7 +225,7 @@ function Field({
 }: {
   label: string;
   htmlFor: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div>
@@ -246,11 +246,8 @@ type FileInputProps = {
   onChange: (f: File | null) => void;
 };
 
-const FileInput = (() => {
-  const Inner = (
-    { id, file, onChange }: FileInputProps,
-    ref: React.Ref<HTMLInputElement>,
-  ) => {
+const FileInput = forwardRef<HTMLInputElement, FileInputProps>(
+  function FileInput({ id, file, onChange }, ref) {
     return (
       <label
         htmlFor={id}
@@ -283,8 +280,5 @@ const FileInput = (() => {
         />
       </label>
     );
-  };
-  return (
-    require("react") as typeof import("react")
-  ).forwardRef<HTMLInputElement, FileInputProps>(Inner);
-})();
+  },
+);
