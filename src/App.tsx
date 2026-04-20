@@ -1,90 +1,79 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { forwardRef, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { forwardRef, useRef, useState, type FormEvent, type ReactNode } from 'react';
 
-export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Lead Send Scheduler" },
-      {
-        name: "description",
-        content:
-          "Upload a CSV and schedule lead sends with a local deadline and timezone.",
-      },
-    ],
-  }),
-  component: Index,
-});
-
-const WEBHOOK_URL = "https://YOUR-N8N-DOMAIN/webhook/YOUR-ID";
+const WEBHOOK_URL = '/api/lead';
 
 const TIMEZONES = [
-  "America/New_York",
-  "America/Chicago",
-  "America/Denver",
-  "America/Los_Angeles",
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Los_Angeles',
 ] as const;
 
-type Status = "idle" | "loading" | "success" | "error";
+type Status = 'idle' | 'loading' | 'success' | 'error';
 
-function Index() {
+export default function App() {
   const [file, setFile] = useState<File | null>(null);
-  const [time, setTime] = useState<string>("");
-  const [timezone, setTimezone] = useState<string>("America/Denver");
-  const [status, setStatus] = useState<Status>("idle");
-  const [errorMsg, setErrorMsg] = useState<string>("");
+  const [time, setTime] = useState('');
+  const [timezone, setTimezone] = useState<string>('America/Denver');
+  const [status, setStatus] = useState<Status>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setErrorMsg("");
+    setErrorMsg('');
 
     if (!file) {
-      setStatus("error");
-      setErrorMsg("Please attach a CSV file.");
+      setStatus('error');
+      setErrorMsg('Please attach a CSV file.');
       return;
     }
-    if (!file.name.toLowerCase().endsWith(".csv")) {
-      setStatus("error");
-      setErrorMsg("File must be a .csv");
+
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      setStatus('error');
+      setErrorMsg('File must be a .csv');
       return;
     }
+
     if (!time) {
-      setStatus("error");
-      setErrorMsg("Please choose a send deadline time.");
+      setStatus('error');
+      setErrorMsg('Please choose a send deadline time.');
       return;
     }
 
     const formData = new FormData();
-    // EXACT field names required by downstream n8n workflow — do not rename.
-    formData.append("attach", file, file.name);
-    formData.append("When do you need these sent by?", time);
-    formData.append("timezone", timezone);
+    formData.append('attach', file, file.name);
+    formData.append('When do you need these sent by?', time);
+    formData.append('timezone', timezone);
 
-    setStatus("loading");
+    setStatus('loading');
+
     try {
       const res = await fetch(WEBHOOK_URL, {
-        method: "POST",
+        method: 'POST',
         body: formData,
       });
+
       if (!res.ok) {
-        throw new Error(`Webhook responded ${res.status}`);
+        const text = await res.text().catch(() => '');
+        throw new Error(text || `Webhook responded ${res.status}`);
       }
-      setStatus("success");
+
+      setStatus('success');
       setFile(null);
-      setTime("");
-      setTimezone("America/Denver");
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setTime('');
+      setTimezone('America/Denver');
+      if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err) {
-      setStatus("error");
+      setStatus('error');
       setErrorMsg(
-        err instanceof Error ? err.message : "Submission failed. Try again.",
+        err instanceof Error ? err.message : 'Submission failed. Try again.',
       );
     }
   }
 
   return (
     <>
-      {/* Background scene */}
       <div className="synthwave-bg" aria-hidden="true">
         <div className="synthwave-haze" />
         <div className="synthwave-sun" />
@@ -93,7 +82,6 @@ function Index() {
 
       <main className="relative flex min-h-screen items-center justify-center px-4 py-12">
         <div className="w-full max-w-lg">
-          {/* Brand strip */}
           <div className="mb-6 flex items-center justify-center gap-2 text-xs uppercase tracking-[0.4em] text-muted-foreground">
             <span className="h-px w-8 bg-[color:var(--magenta)]/60" />
             <span className="text-glow-cyan">SYS // 1984</span>
@@ -102,7 +90,7 @@ function Index() {
 
           <section
             className="border-glow rounded-xl bg-card/70 p-8 backdrop-blur-xl sm:p-10"
-            style={{ borderColor: "transparent" }}
+            style={{ borderColor: 'transparent' }}
           >
             <header className="mb-8 text-center">
               <h1 className="font-display text-3xl font-bold uppercase text-foreground text-glow-magenta sm:text-4xl">
@@ -114,7 +102,6 @@ function Index() {
             </header>
 
             <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-              {/* File upload */}
               <Field label="attach" htmlFor="attach">
                 <FileInput
                   ref={fileInputRef}
@@ -124,11 +111,7 @@ function Index() {
                 />
               </Field>
 
-              {/* Time */}
-              <Field
-                label="When do you need these sent by?"
-                htmlFor="deadline-time"
-              >
+              <Field label="When do you need these sent by?" htmlFor="deadline-time">
                 <input
                   id="deadline-time"
                   type="time"
@@ -139,7 +122,6 @@ function Index() {
                 />
               </Field>
 
-              {/* Timezone */}
               <Field label="timezone" htmlFor="timezone">
                 <div className="relative">
                   <select
@@ -170,25 +152,23 @@ function Index() {
                 </div>
               </Field>
 
-              {/* Submit */}
               <button
                 type="submit"
-                disabled={status === "loading"}
+                disabled={status === 'loading'}
                 className="group relative w-full overflow-hidden rounded-md px-6 py-3.5 font-display text-sm font-bold uppercase tracking-[0.2em] text-primary-foreground transition disabled:cursor-not-allowed disabled:opacity-70"
                 style={{
                   background:
-                    "linear-gradient(90deg, oklch(0.72 0.28 330) 0%, oklch(0.62 0.25 300) 50%, oklch(0.78 0.18 200) 100%)",
+                    'linear-gradient(90deg, oklch(0.72 0.28 330) 0%, oklch(0.62 0.25 300) 50%, oklch(0.78 0.18 200) 100%)',
                   boxShadow:
-                    "0 0 0 1px oklch(0.72 0.28 330 / 0.5), 0 8px 32px oklch(0.55 0.25 320 / 0.4), 0 0 60px oklch(0.55 0.25 320 / 0.25)",
+                    '0 0 0 1px oklch(0.72 0.28 330 / 0.5), 0 8px 32px oklch(0.55 0.25 320 / 0.4), 0 0 60px oklch(0.55 0.25 320 / 0.25)',
                 }}
               >
                 <span className="relative z-10">
-                  {status === "loading" ? "Scheduling…" : "Schedule Sends"}
+                  {status === 'loading' ? 'Scheduling…' : 'Schedule Sends'}
                 </span>
               </button>
 
-              {/* Status messages */}
-              {status === "success" && (
+              {status === 'success' && (
                 <div
                   role="status"
                   className="rounded-md border border-[color:var(--cyan)]/40 bg-[color:var(--cyan)]/5 px-4 py-3 text-sm text-[color:var(--cyan)] text-glow-cyan"
@@ -196,7 +176,8 @@ function Index() {
                   ✓ Transmission received. Sends are scheduled.
                 </div>
               )}
-              {status === "error" && errorMsg && (
+
+              {status === 'error' && errorMsg && (
                 <div
                   role="alert"
                   className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive-foreground"
@@ -215,8 +196,6 @@ function Index() {
     </>
   );
 }
-
-/* ---------- helpers ---------- */
 
 function Field({
   label,
@@ -243,42 +222,41 @@ function Field({
 type FileInputProps = {
   id: string;
   file: File | null;
-  onChange: (f: File | null) => void;
+  onChange: (file: File | null) => void;
 };
 
-const FileInput = forwardRef<HTMLInputElement, FileInputProps>(
-  function FileInput({ id, file, onChange }, ref) {
-    return (
-      <label
-        htmlFor={id}
-        className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-dashed border-border bg-input/40 px-4 py-3 text-sm text-muted-foreground transition hover:border-[color:var(--magenta)]/70 hover:bg-input/60 hover:text-foreground"
-      >
-        <span className="flex items-center gap-3 truncate">
-          <span
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-[color:var(--cyan)]/50 text-[color:var(--cyan)]"
-            aria-hidden="true"
-          >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-              <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V7l-4-4H4zm6 1.5L14.5 9H11a1 1 0 01-1-1V4.5z" />
-            </svg>
-          </span>
-          <span className="truncate">
-            {file ? file.name : "Choose a .csv file…"}
-          </span>
+const FileInput = forwardRef<HTMLInputElement, FileInputProps>(function FileInput(
+  { id, file, onChange },
+  ref,
+) {
+  return (
+    <label
+      htmlFor={id}
+      className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-dashed border-border bg-input/40 px-4 py-3 text-sm text-muted-foreground transition hover:border-[color:var(--magenta)]/70 hover:bg-input/60 hover:text-foreground"
+    >
+      <span className="flex items-center gap-3 truncate">
+        <span
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-[color:var(--cyan)]/50 text-[color:var(--cyan)]"
+          aria-hidden="true"
+        >
+          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+            <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V7l-4-4H4zm6 1.5L14.5 9H11a1 1 0 01-1-1V4.5z" />
+          </svg>
         </span>
-        <span className="shrink-0 rounded border border-[color:var(--magenta)]/50 px-2 py-0.5 font-display text-[10px] uppercase tracking-widest text-[color:var(--magenta)]">
-          Browse
-        </span>
-        <input
-          ref={ref}
-          id={id}
-          type="file"
-          accept=".csv,text/csv"
-          required
-          className="sr-only"
-          onChange={(e) => onChange(e.target.files?.[0] ?? null)}
-        />
-      </label>
-    );
-  },
-);
+        <span className="truncate">{file ? file.name : 'Choose a .csv file…'}</span>
+      </span>
+      <span className="shrink-0 rounded border border-[color:var(--magenta)]/50 px-2 py-0.5 font-display text-[10px] uppercase tracking-widest text-[color:var(--magenta)]">
+        Browse
+      </span>
+      <input
+        ref={ref}
+        id={id}
+        type="file"
+        accept=".csv,text/csv"
+        required
+        className="sr-only"
+        onChange={(e) => onChange(e.target.files?.[0] ?? null)}
+      />
+    </label>
+  );
+});
