@@ -11,13 +11,44 @@ const TIMEZONES = [
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
+type ExclusionWindow = {
+  start: string;
+  end: string;
+};
+
+const EMPTY_EXCLUSION_WINDOW: ExclusionWindow = { start: '', end: '' };
+
 export default function App() {
   const [file, setFile] = useState<File | null>(null);
   const [time, setTime] = useState('');
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
   const [timezone, setTimezone] = useState<string>('America/Denver');
+  const [exclusionWindows, setExclusionWindows] = useState<ExclusionWindow[]>([
+    { ...EMPTY_EXCLUSION_WINDOW },
+  ]);
   const [status, setStatus] = useState<Status>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function updateExclusionWindow(index: number, field: keyof ExclusionWindow, value: string) {
+    setExclusionWindows((current) =>
+      current.map((window, i) =>
+        i === index ? { ...window, [field]: value } : window,
+      ),
+    );
+  }
+
+  function addExclusionWindow() {
+    setExclusionWindows((current) => [...current, { ...EMPTY_EXCLUSION_WINDOW }]);
+  }
+
+  function removeExclusionWindow(index: number) {
+    setExclusionWindows((current) => {
+      const next = current.filter((_, i) => i !== index);
+      return next.length ? next : [{ ...EMPTY_EXCLUSION_WINDOW }];
+    });
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -41,10 +72,39 @@ export default function App() {
       return;
     }
 
+    if (!emailSubject.trim()) {
+      setStatus('error');
+      setErrorMsg('Please enter an email subject.');
+      return;
+    }
+
+    if (!emailBody.trim()) {
+      setStatus('error');
+      setErrorMsg('Please enter an email body.');
+      return;
+    }
+
+    const completeExclusionWindows = exclusionWindows.filter(
+      (window) => window.start && window.end,
+    );
+
+    const hasPartialExclusionWindow = exclusionWindows.some(
+      (window) => Boolean(window.start) !== Boolean(window.end),
+    );
+
+    if (hasPartialExclusionWindow) {
+      setStatus('error');
+      setErrorMsg('Each exclusion window needs both a start and end time.');
+      return;
+    }
+
     const formData = new FormData();
     formData.append('attach', file, file.name);
     formData.append('When do you need these sent by?', time);
     formData.append('timezone', timezone);
+    formData.append('emailSubject', emailSubject.trim());
+    formData.append('emailBody', emailBody.trim());
+    formData.append('exclusionWindows', JSON.stringify(completeExclusionWindows));
 
     setStatus('loading');
 
@@ -62,7 +122,10 @@ export default function App() {
       setStatus('success');
       setFile(null);
       setTime('');
+      setEmailSubject('');
+      setEmailBody('');
       setTimezone('America/Denver');
+      setExclusionWindows([{ ...EMPTY_EXCLUSION_WINDOW }]);
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err) {
       setStatus('error');
@@ -76,7 +139,6 @@ export default function App() {
     <>
       <div className="synthwave-bg" aria-hidden="true">
         <div className="synthwave-haze" />
-        <div className="synthwave-sun" />
         <div className="synthwave-grid" />
       </div>
 
@@ -108,6 +170,31 @@ export default function App() {
                   id="attach"
                   file={file}
                   onChange={setFile}
+                />
+              </Field>
+
+
+              <Field label="email subject" htmlFor="email-subject">
+                <input
+                  id="email-subject"
+                  type="text"
+                  required
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  placeholder="Night Coverage Gaps"
+                  className="w-full rounded-md border border-border bg-input/60 px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted-foreground/60 focus:border-[color:var(--cyan)] focus:[box-shadow:0_0_0_1px_oklch(0.82_0.18_200/0.7),0_0_16px_oklch(0.82_0.18_200/0.35)]"
+                />
+              </Field>
+
+              <Field label="email body" htmlFor="email-body">
+                <textarea
+                  id="email-body"
+                  required
+                  value={emailBody}
+                  onChange={(e) => setEmailBody(e.target.value)}
+                  placeholder="Paste the email body you want to send..."
+                  rows={8}
+                  className="min-h-44 w-full resize-y rounded-md border border-border bg-input/60 px-4 py-3 text-base leading-relaxed text-foreground outline-none transition placeholder:text-muted-foreground/60 focus:border-[color:var(--cyan)] focus:[box-shadow:0_0_0_1px_oklch(0.82_0.18_200/0.7),0_0_16px_oklch(0.82_0.18_200/0.35)]"
                 />
               </Field>
 
@@ -149,6 +236,56 @@ export default function App() {
                       clipRule="evenodd"
                     />
                   </svg>
+                </div>
+              </Field>
+
+              <Field label="exclusion windows" htmlFor="exclusion-start-0">
+                <div className="space-y-3">
+                  {exclusionWindows.map((window, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-[1fr_1fr_auto] items-center gap-2"
+                    >
+                      <input
+                        id={`exclusion-start-${index}`}
+                        type="time"
+                        value={window.start}
+                        aria-label={`Exclusion window ${index + 1} start`}
+                        onChange={(e) =>
+                          updateExclusionWindow(index, 'start', e.target.value)
+                        }
+                        className="w-full rounded-md border border-border bg-input/60 px-3 py-2.5 font-mono text-sm text-foreground outline-none transition focus:border-[color:var(--cyan)] focus:[box-shadow:0_0_0_1px_oklch(0.82_0.18_200/0.7),0_0_16px_oklch(0.82_0.18_200/0.35)]"
+                      />
+                      <input
+                        type="time"
+                        value={window.end}
+                        aria-label={`Exclusion window ${index + 1} end`}
+                        onChange={(e) =>
+                          updateExclusionWindow(index, 'end', e.target.value)
+                        }
+                        className="w-full rounded-md border border-border bg-input/60 px-3 py-2.5 font-mono text-sm text-foreground outline-none transition focus:border-[color:var(--cyan)] focus:[box-shadow:0_0_0_1px_oklch(0.82_0.18_200/0.7),0_0_16px_oklch(0.82_0.18_200/0.35)]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          index === exclusionWindows.length - 1
+                            ? addExclusionWindow()
+                            : removeExclusionWindow(index)
+                        }
+                        className="flex h-10 w-10 items-center justify-center rounded-md border border-[color:var(--cyan)]/50 bg-input/40 font-display text-lg text-[color:var(--cyan)] transition hover:border-[color:var(--magenta)]/70 hover:text-[color:var(--magenta)]"
+                        aria-label={
+                          index === exclusionWindows.length - 1
+                            ? 'Add exclusion window'
+                            : 'Remove exclusion window'
+                        }
+                      >
+                        {index === exclusionWindows.length - 1 ? '+' : '−'}
+                      </button>
+                    </div>
+                  ))}
+                  <p className="text-xs leading-relaxed text-muted-foreground/80">
+                    Optional. Sends will avoid these local time windows.
+                  </p>
                 </div>
               </Field>
 

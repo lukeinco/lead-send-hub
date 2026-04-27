@@ -86,46 +86,6 @@ body {
     );
 }
 
-.synthwave-sun {
-  position: absolute;
-  left: 50%;
-  top: 42%;
-  width: 380px;
-  height: 380px;
-  transform: translate(-50%, -50%);
-  border-radius: 9999px;
-  background: linear-gradient(
-    180deg,
-    oklch(0.85 0.2 60) 0%,
-    oklch(0.7 0.27 30) 45%,
-    oklch(0.55 0.28 350) 100%
-  );
-  filter: blur(0.5px);
-  box-shadow:
-    0 0 80px oklch(0.7 0.27 30 / 0.5),
-    0 0 160px oklch(0.55 0.28 350 / 0.4);
-  -webkit-mask-image: repeating-linear-gradient(
-    to bottom,
-    black 0 12px,
-    transparent 12px 14px,
-    black 14px 28px,
-    transparent 28px 32px,
-    black 32px 52px,
-    transparent 52px 58px,
-    black 58px 100%
-  );
-  mask-image: repeating-linear-gradient(
-    to bottom,
-    black 0 12px,
-    transparent 12px 14px,
-    black 14px 28px,
-    transparent 28px 32px,
-    black 32px 52px,
-    transparent 52px 58px,
-    black 58px 100%
-  );
-}
-
 .synthwave-grid {
   position: absolute;
   left: 50%;
